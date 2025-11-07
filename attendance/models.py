@@ -1,0 +1,66 @@
+from re import S
+from django.db import models
+
+
+class Subject(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
+class Student(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+    email = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.email})"
+
+
+class User(models.Model):
+    username = models.CharField(primary_key=True,max_length=100, unique=True)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=100)
+    firstName = models.CharField(max_length=100)
+    lastName = models.CharField(max_length=100)
+    role = models.CharField(max_length=100)   # Faculty, Admin, etc.
+
+    def __str__(self):
+        return self.username
+
+
+class AttendanceRecord(models.Model):
+    id = models.AutoField(primary_key=True)
+
+    faculty = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="attendance_records"
+    )
+    number_of_students = models.IntegerField()
+
+    subject = models.ForeignKey(
+        Subject, on_delete=models.CASCADE, related_name="attendance_records"
+    )
+
+    date = models.CharField(max_length=100)
+    time = models.CharField(max_length=100)
+
+    students = models.ManyToManyField(
+        Student,
+        related_name="attendance_records",
+        through="AttendanceStudents"  # Optional explicit join table
+    )
+
+    def __str__(self):
+        return f"AttendanceRecord {self.id} - {self.subject} ({self.date})"
+
+
+# Explicit join table (like @JoinTable in JPA)
+class AttendanceStudents(models.Model):
+    attendance_record = models.ForeignKey(AttendanceRecord, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "attendance_students"
+        unique_together = ("attendance_record", "student")
